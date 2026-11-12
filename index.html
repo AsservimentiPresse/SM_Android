@@ -2,163 +2,119 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SM20 - Test AR diretto</title>
 
-  <title>Visualizzatore AR - SM20</title>
+<script type="module"
+src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
+</script>
 
-  <script type="module"
-    src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
-  </script>
+<style>
+* { box-sizing: border-box; }
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+body {
+  margin: 0;
+  background: #15191e;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
 
-    body {
-      margin: 0;
-      padding: 0;
-      background: #15191e;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
+h2 { padding: 12px; }
 
-    header {
-      padding: 18px 12px 8px;
-    }
+model-viewer {
+  width: 100%;
+  height: 65vh;
+  min-height: 350px;
+  background: #20262d;
+}
 
-    h1 {
-      margin: 0;
-      font-size: 23px;
-    }
+button {
+  margin: 20px auto;
+  padding: 17px 25px;
+  border: 0;
+  border-radius: 10px;
+  background: #1685ed;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+}
 
-    p {
-      color: #c5cbd2;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    model-viewer {
-      display: block;
-      width: 100%;
-      height: 70vh;
-      min-height: 350px;
-      background: #20262d;
-      --poster-color: #20262d;
-    }
-
-    #ar-button {
-      position: absolute;
-      right: 16px;
-      bottom: 16px;
-      background: #1685ed;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 15px 22px;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    #status {
-      padding: 15px;
-      color: #d5dce4;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    #progress {
-      width: 85%;
-      max-width: 350px;
-      height: 5px;
-      margin: 12px auto;
-      background: #414951;
-      border-radius: 5px;
-      overflow: hidden;
-    }
-
-    #progressBar {
-      width: 0%;
-      height: 100%;
-      background: #1685ed;
-      transition: width 0.2s;
-    }
-  </style>
+#status {
+  padding: 15px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+</style>
 </head>
 
 <body>
 
-  <header>
-    <h1>Visualizzatore 3D - SM20</h1>
-    <p>Ruota e ingrandisci il modello con le dita.</p>
-  </header>
+<h2>SM20 - Realtà aumentata</h2>
 
-  <model-viewer
-    id="viewer"
-    src="./SM20%20BP.glb"
-    alt="ASSIEME Model"
+<model-viewer
+  id="viewer"
+  src="./SM20%20BP.glb"
+  alt="ASSIEME SM20"
+  ar
+  ar-modes="webxr"
+  camera-controls
+  auto-rotate
+  shadow-intensity="1"
+  exposure="1">
+</model-viewer>
 
-    ar
-    ar-modes="webxr scene-viewer"
+<button id="arButton">PROVA AR DIRETTA</button>
 
-    camera-controls
-    auto-rotate
-    shadow-intensity="1"
-    exposure="1"
-    loading="eager"
-    ar-scale="auto">
+<div id="status">
+Caricamento modello...
+</div>
 
-    <button slot="ar-button" id="ar-button">
-      APRI IL MODELLO IN AR
-    </button>
+<script>
+const viewer = document.getElementById("viewer");
+const status = document.getElementById("status");
+const button = document.getElementById("arButton");
 
-  </model-viewer>
+viewer.addEventListener("load", () => {
+  status.textContent =
+    "Modello caricato. Premi PROVA AR DIRETTA.";
+});
 
-  <div id="progress">
-    <div id="progressBar"></div>
-  </div>
+viewer.addEventListener("error", () => {
+  status.textContent =
+    "Errore caricamento modello. Controlla il file GLB.";
+});
 
-  <div id="status">
-    Caricamento del modello 3D...
-  </div>
+viewer.addEventListener("ar-status", (event) => {
+  const s = event.detail.status;
 
-  <script>
-    const viewer = document.getElementById("viewer");
-    const statusText = document.getElementById("status");
-    const progressBar = document.getElementById("progressBar");
+  if (s === "session-started") {
+    status.textContent = "AR avviata!";
+  } else if (s === "object-placed") {
+    status.textContent = "Modello posizionato nell'ambiente.";
+  } else if (s === "failed") {
+    status.textContent =
+      "AR non disponibile su questo browser o dispositivo.";
+  } else if (s === "not-presenting") {
+    status.textContent = "Sessione AR terminata.";
+  }
+});
 
-    viewer.addEventListener("load", function () {
-      statusText.textContent =
-        "Modello caricato correttamente. Premi APRI IL MODELLO IN AR.";
+button.addEventListener("click", async () => {
+  status.textContent = "Tentativo di avvio AR nel browser...";
 
-      progressBar.style.width = "100%";
-    });
+  try {
+    await viewer.activateAR();
+  } catch (error) {
+    status.textContent =
+      "WebXR non disponibile: " +
+      (error.message || "controllare supporto AR del dispositivo");
 
-    viewer.addEventListener("progress", function (event) {
-      const value = Math.round(
-        event.detail.totalProgress * 100
-      );
-
-      progressBar.style.width = value + "%";
-
-      if (value < 100) {
-        statusText.textContent =
-          "Caricamento modello: " + value + "%";
-      }
-    });
-
-    viewer.addEventListener("error", function (event) {
-      statusText.textContent =
-        "Errore nel caricamento del GLB. " +
-        "Verifica il nome SM20 BP.glb e la cartella del file.";
-
-      console.error(event);
-    });
-
-  </script>
+    console.error(error);
+  }
+});
+</script>
 
 </body>
 </html>
