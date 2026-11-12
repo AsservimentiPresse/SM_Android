@@ -7,9 +7,8 @@
 
   <title>Visualizzatore AR - SM20</title>
 
-  <!-- Libreria ufficiale model-viewer -->
   <script type="module"
-    src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js">
+    src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
   </script>
 
   <style>
@@ -44,48 +43,31 @@
     model-viewer {
       display: block;
       width: 100%;
-      height: 65vh;
+      height: 70vh;
       min-height: 350px;
       background: #20262d;
       --poster-color: #20262d;
     }
 
-    .controls {
-      padding: 18px 15px 25px;
-    }
-
-    #launchAR {
-      display: inline-block;
-      width: 90%;
-      max-width: 360px;
-      padding: 17px 20px;
-      border: 0;
-      border-radius: 12px;
+    #ar-button {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
       background: #1685ed;
       color: white;
-      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      padding: 15px 22px;
+      font-size: 16px;
       font-weight: bold;
-      text-decoration: none;
       cursor: pointer;
     }
 
-    #launchAR:active {
-      background: #0868c4;
-      transform: scale(0.98);
-    }
-
-    #launchAR.disabled {
-      background: #555;
-      pointer-events: none;
-    }
-
     #status {
-      margin: 15px auto 5px;
-      max-width: 500px;
-      padding: 0 15px;
+      padding: 15px;
+      color: #d5dce4;
       font-size: 14px;
       line-height: 1.5;
-      color: #d5dce4;
     }
 
     #progress {
@@ -104,12 +86,6 @@
       background: #1685ed;
       transition: width 0.2s;
     }
-
-    .instructions {
-      padding: 0 20px 20px;
-      color: #9faab5;
-      font-size: 12px;
-    }
   </style>
 </head>
 
@@ -117,139 +93,73 @@
 
   <header>
     <h1>Visualizzatore 3D - SM20</h1>
-    <p>Ruota e ingrandisci il modello sullo schermo.</p>
+    <p>Ruota e ingrandisci il modello con le dita.</p>
   </header>
 
-  <!-- Modello 3D -->
   <model-viewer
     id="viewer"
-    src="SM20%20BP.glb"
+    src="./SM20%20BP.glb"
     alt="ASSIEME Model"
+
+    ar
+    ar-modes="webxr scene-viewer"
+
     camera-controls
     auto-rotate
     shadow-intensity="1"
     exposure="1"
     loading="eager"
-    touch-action="pan-y">
+    ar-scale="auto">
+
+    <button slot="ar-button" id="ar-button">
+      APRI IL MODELLO IN AR
+    </button>
+
   </model-viewer>
 
   <div id="progress">
     <div id="progressBar"></div>
   </div>
 
-  <div class="controls">
-
-    <!-- Apertura diretta di Google Scene Viewer -->
-    <a id="launchAR" href="#">
-      APRI IL MODELLO IN AR
-    </a>
-
-    <div id="status">
-      Caricamento del modello 3D...
-    </div>
-
-  </div>
-
-  <div class="instructions">
-    Premi il pulsante AR per aprire il visualizzatore Google.
-    Una volta aperto, scegli "Vedi nel tuo spazio" se disponibile.
+  <div id="status">
+    Caricamento del modello 3D...
   </div>
 
   <script>
-    const MODEL_FILE = "SM20 BP.glb";
-
     const viewer = document.getElementById("viewer");
-    const arButton = document.getElementById("launchAR");
     const statusText = document.getElementById("status");
     const progressBar = document.getElementById("progressBar");
 
-    // Percorso completo del GLB nella stessa cartella dell'index
-    const modelUrl = new URL(
-      MODEL_FILE,
-      window.location.href
-    ).href;
-
-    // URL di ritorno in caso di mancato avvio di Scene Viewer
-    const fallbackUrl = new URL(window.location.href);
-    fallbackUrl.searchParams.set("ar-fallback", "1");
-
-    // Controlla se siamo su Android
-    const isAndroid = /android/i.test(navigator.userAgent);
-
-    // Crea l'intent Android ufficiale per Google Scene Viewer
-    const sceneViewerIntent =
-      "intent://arvr.google.com/scene-viewer/1.0" +
-      "?file=" + encodeURIComponent(modelUrl) +
-      "&mode=ar_preferred" +
-      "&title=" + encodeURIComponent("ASSIEME Model") +
-      "#Intent;" +
-      "scheme=https;" +
-      "package=com.google.android.googlequicksearchbox;" +
-      "action=android.intent.action.VIEW;" +
-      "S.browser_fallback_url=" +
-      encodeURIComponent(fallbackUrl.href) +
-      ";end;";
-
-    // Imposta il pulsante AR
-    if (isAndroid) {
-      arButton.href = sceneViewerIntent;
-      arButton.classList.remove("disabled");
-    } else {
-      arButton.href = "#";
-      arButton.classList.add("disabled");
-      arButton.textContent = "APRIRE DA UN DISPOSITIVO ANDROID";
-    }
-
-    // Se Google ha effettuato il ritorno alla pagina,
-    // mostra un messaggio invece di tentare un nuovo avvio
-    const params = new URLSearchParams(window.location.search);
-
-    if (params.get("ar-fallback") === "1") {
-      statusText.textContent =
-        "Scene Viewer non è riuscito ad avviarsi. " +
-        "Controlla che l'app Google e Google Play Services per AR " +
-        "siano installati e aggiornati.";
-    }
-
-    // Modello caricato correttamente
     viewer.addEventListener("load", function () {
       statusText.textContent =
-        "Modello 3D caricato correttamente. Puoi aprirlo in AR.";
+        "Modello caricato correttamente. Premi APRI IL MODELLO IN AR.";
 
       progressBar.style.width = "100%";
     });
 
-    // Avanzamento caricamento
     viewer.addEventListener("progress", function (event) {
-      const progress = Math.round(
+      const value = Math.round(
         event.detail.totalProgress * 100
       );
 
-      progressBar.style.width = progress + "%";
+      progressBar.style.width = value + "%";
 
-      if (progress < 100) {
+      if (value < 100) {
         statusText.textContent =
-          "Caricamento modello: " + progress + "%";
+          "Caricamento modello: " + value + "%";
       }
     });
 
-    // Errore di caricamento del GLB
     viewer.addEventListener("error", function (event) {
       statusText.textContent =
-        "ERRORE: impossibile caricare il modello. " +
-        "Controlla che il file si chiami esattamente " +
-        MODEL_FILE +
-        " e che si trovi nella stessa cartella di index.html.";
+        "Errore nel caricamento del GLB. " +
+        "Verifica il nome SM20 BP.glb e la cartella del file.";
 
-      console.error("Errore model-viewer:", event);
+      console.error(event);
     });
 
-    // Messaggio iniziale per Android
-    if (isAndroid && params.get("ar-fallback") !== "1") {
-      statusText.textContent =
-        "Attendi il caricamento del modello, poi premi APRI IL MODELLO IN AR.";
-    }
   </script>
 
 </body>
 </html>
+
